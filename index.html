@@ -1,12 +1,121 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>SVG Tracer API</title>
-  <script src="ImageTracer.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SVG Tracer</title>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #ffffff;
+        margin: 0;
+        padding: 30px;
+        text-align: center;
+        color: #333;
+    }
+    h1 {
+        font-size: 28px;
+        margin-bottom: 10px;
+    }
+    #uploadBox {
+        margin: 20px auto;
+        padding: 20px;
+        border: 2px dashed #888;
+        border-radius: 10px;
+        width: 70%;
+        cursor: pointer;
+    }
+    #imgPreview {
+        margin-top: 20px;
+        max-width: 60%;
+        border-radius: 8px;
+        display: none;
+    }
+    #svgResult {
+        margin-top: 20px;
+        width: 80%;
+        border: 1px solid #ccc;
+        display: none;
+        padding: 20px;
+        background: #f7f7f7;
+    }
+    button {
+        margin-top: 20px;
+        padding: 12px 25px;
+        font-size: 16px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        background: #4CAF50;
+        color: white;
+    }
+    button:disabled {
+        background: #999;
+    }
+</style>
 </head>
+
 <body>
-  <h2>SVG Tracer Ready</h2>
-  <p>Jika kamu melihat halaman ini berarti API siap dipakai oleh Google Studio.</p>
+<h1>SVG Tracer</h1>
+<p>Upload gambar → otomatis menjadi SVG</p>
+
+<input type="file" id="fileInput" accept="image/*" style="display:none;">
+<div id="uploadBox" onclick="document.getElementById('fileInput').click()">
+    Klik atau seret gambar ke sini (PNG / JPG)
+</div>
+
+<img id="imgPreview" />
+
+<div id="svgResult"></div>
+
+<button id="downloadBtn" disabled>Download SVG</button>
+
+<script src="ImageTracer.js"></script>
+
+<script>
+    const fileInput = document.getElementById("fileInput");
+    const imgPreview = document.getElementById("imgPreview");
+    const svgResult = document.getElementById("svgResult");
+    const downloadBtn = document.getElementById("downloadBtn");
+
+    fileInput.addEventListener("change", function () {
+        const file = this.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            imgPreview.src = e.target.result;
+            imgPreview.style.display = "block";
+
+            convertToSVG(e.target.result);
+        };
+        reader.readAsDataURL(file);
+    });
+
+    function convertToSVG(imageData) {
+        svgResult.innerHTML = "<p>Processing...</p>";
+        svgResult.style.display = "block";
+
+        ImageTracer.imageToSVG(
+            imageData,
+            function (svgstr) {
+                svgResult.innerHTML = svgstr;
+                downloadBtn.disabled = false;
+
+                downloadBtn.onclick = function () {
+                    const blob = new Blob([svgstr], { type: "image/svg+xml" });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "vectorized.svg";
+                    a.click();
+                };
+            },
+            { ltres: 1, qtres: 1, strokewidth: 1 }
+        );
+    }
+</script>
+
 </body>
 </html>
