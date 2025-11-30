@@ -3,71 +3,72 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Image Tracer Generator</title>
-  <!-- Include ImageTracer JS -->
-  <script src="https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.3/imagetracer.min.js"></script>
+  <title>Logo Tracer Cepat</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    #output { margin-top: 20px; border: 1px solid #ccc; padding: 10px; display: inline-block; }
-    img { max-width: 300px; max-height: 300px; margin-top: 10px; }
+    body { font-family: sans-serif; padding: 20px; text-align: center; }
+    canvas, svg { border: 1px solid #ccc; margin-top: 10px; }
+    #output { margin-top: 20px; }
   </style>
 </head>
 <body>
-  <h1>Image Tracer Generator</h1>
-  <input type="file" id="upload" accept="image/png, image/jpeg">
+  <h1>Logo Tracer Cepat</h1>
+  <input type="file" id="fileInput" accept="image/png, image/jpeg">
   <div id="output"></div>
 
-  <script>
-    const upload = document.getElementById('upload');
-    const output = document.getElementById('output');
+  <!-- ImageTracer.js -->
+  <script src="https://cdn.jsdelivr.net/gh/jankovicsandras/imagetracerjs@latest/imagetracer_v1.2.8.js"></script>
 
-    upload.addEventListener('change', function() {
-      const file = this.files[0];
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const output = document.getElementById('output');
+    const maxSize = 150; // Resize max 150px
+
+    fileInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = function(event) {
         const img = new Image();
         img.onload = function() {
-          // Resize gambar maksimal 300x300 px supaya tracing cepat
+          // Resize canvas
+          const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+          const w = img.width * scale;
+          const h = img.height * scale;
+
           const canvas = document.createElement('canvas');
-          const maxSize = 300;
-          let w = img.width;
-          let h = img.height;
-          if (w > h && w > maxSize) {
-            h = h * (maxSize / w);
-            w = maxSize;
-          } else if (h > w && h > maxSize) {
-            w = w * (maxSize / h);
-            h = maxSize;
-          } else if (w > maxSize) { // square images
-            w = h = maxSize;
-          }
           canvas.width = w;
           canvas.height = h;
           const ctx = canvas.getContext('2d');
+
+          // Pre-processing: grayscale + brighten
+          ctx.filter = 'grayscale(100%) brightness(200%)';
           ctx.drawImage(img, 0, 0, w, h);
 
-          // Trace gambar menggunakan ImageTracer
-          const imageData = ctx.getImageData(0, 0, w, h);
+          // Get base64 data
+          const dataURL = canvas.toDataURL();
+
+          // Tracing options ringan
           const options = {
             scale: 1,
-            ltres: 1, // line threshold
-            qtres: 1, // curve threshold
+            ltres: 10,
+            qtres: 10,
             pathomit: 8,
-            colorsampling: 0,
-            numberofcolors: 16,
+            numberofcolors: 2,
             strokewidth: 1,
             roundcoords: 1,
             linefilter: true
           };
 
-          ImageTracer.imageToSVG(imageData, function(svgstr){
-            output.innerHTML = svgstr;
-          }, options);
-        };
-        img.src = e.target.result;
-      };
+          // Trace image
+          output.innerHTML = '<p>Tracing...</p>';
+          setTimeout(() => {
+            const svgString = ImageTracer.imagedataToSVG(ImageTracer.getImgdata(canvas), options);
+            output.innerHTML = svgString;
+          }, 10);
+        }
+        img.src = event.target.result;
+      }
       reader.readAsDataURL(file);
     });
   </script>
